@@ -17,7 +17,12 @@ class AuthController extends Controller
      */
     public function index()
     {
-        //
+        if (Auth::user()->hasRole(['Super Admin', 'Write'])) {
+            return response()->json(User::all());
+        }
+        return response()->json([
+            'message' => 'You are not authorized to access this resource',
+        ], 403);
     }
 
     /**
@@ -52,7 +57,7 @@ class AuthController extends Controller
 
         /** @var \App\Models\User $user */
 
-        $accessToken = $user->createToken('authToken')->accessToken;
+        $accessToken = $user->createToken('authToken')->plainTextToken;
 
 
         return response([
@@ -81,38 +86,48 @@ class AuthController extends Controller
 
         ]);
 
-        $accessToken = $user->createToken('authToken')->accessToken;
+        $accessToken = $user->createToken('authToken')->plainTextToken;
 
         return response(['user' => $user, 'access_token' => $accessToken]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, $id)
-    {
-        //
-    }
 
-    public function user()
+
+    public function assignRole(Request $request)
     {
-        return response()->json([
-            'users' => User::all()
+        $request->validate([
+            'user_id' => 'required',
+            'role' => 'required'
         ]);
+
+        $user = User::find($request->user_id);
+
+        $user->assignRole($request->role);
+
+        return response()->json($user);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
+
     public function destroy($id)
     {
-        //
+        $user = Auth::user();
+
+        if (!$user->hasRole(['Super Admin', 'Write']))
+            return response()->json([
+                'message' => 'You are not authorized to access this resource',
+            ], 403);
+
+        $deleteUser = User::find($id);
+
+        if ($deleteUser == null)
+            return response()->json([
+                'message' => 'User not found',
+            ], 404);
+
+        $deleteUser->delete();
+
+        return response()->json([
+            'message' => 'The user has been deleted Successfully',
+        ]);
     }
 }
