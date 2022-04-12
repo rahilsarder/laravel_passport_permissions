@@ -18,7 +18,8 @@ class AuthController extends Controller
     public function index()
     {
         if (Auth::user()->hasRole(['Super Admin', 'Write'])) {
-            return response()->json(User::all());
+
+            return response()->json(User::with('roles')->get());
         }
         return response()->json([
             'message' => 'You are not authorized to access this resource',
